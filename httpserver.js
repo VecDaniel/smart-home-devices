@@ -157,6 +157,16 @@ let db = null;
                     req_device[item.toString()] = req.body[item];
                 }
 
+                mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
+                    if (!err) {
+                        console.log("Yay, it works");
+                    } else {
+                        console.log(err);
+                    }
+                });
+
+
+
                 db.collection('devices').findOneAndUpdate(
                     { "_id": id },
                     { $set: { "chipId": req_device.chipId || device.chipId, "name": req_device.name || device.name, "state": req_device.state || device.state } },
@@ -167,7 +177,8 @@ let db = null;
                         }
                         if (result) {
                             return res.status(204)
-                                .header('Location', `/devices/${id}`);
+                                .header('Location', `/devices/${id}`)
+                                .end();
                         } else {
                             return res.status(500)
                                 .json({ message: 'An error occured.' });
