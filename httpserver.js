@@ -152,12 +152,14 @@ let db = null;
             }
 
             if (device) {
+                if (!req.body) {
+                    return res.status(400).json();
+                }
                 let req_device = {};
                 for (let item in req.body) {
                     req_device[item.toString()] = req.body[item];
                 }
-                req_device["state"].lastUpdate=Date.now();
-                console.log(JSON.stringify(req_device));
+                req_device["state"].lastUpdate = Date.now();
                 mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
                     if (!err) {
                         console.log("Yay, it works");
@@ -170,7 +172,7 @@ let db = null;
 
                 db.collection('devices').findOneAndUpdate(
                     { "_id": id },
-                    { $set: { "chipId": req_device.chipId || device.chipId, "name": req_device.name || device.name, "state": req_device.state || device.state } },
+                    { $set: { "name": req_device.name || device.name, "state": req_device.state || device.state } },
                     { returnOriginal: false }, function (err, result) {
                         if (err) {
                             return res.status(500)
@@ -228,6 +230,10 @@ let db = null;
 
 
     app.use('/devices', router);
+    app.use((req, res) => {
+        res.status(500)
+            .json();
+    })
     app.listen(
         config.options.port,
         (err) => {
