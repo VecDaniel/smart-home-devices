@@ -157,8 +157,17 @@ let db = null;
             if (device) {
                 let req_device = {};
                 for (let item in req.body) {
-                    req_device[item.toString()] = req.body[item];
+                    if (typeof req.body[item] === 'object') {
+                        req_device["state"] = {
+                            ...device["state"],
+                            ...req.body["state"]
+                        };
+                    }
+                    else {
+                        req_device[item.toString()] = req.body[item];
+                    }
                 }
+
                 req_device["state"].lastUpdate = Date.now();
                 if (req_device["state"].status) {
                     mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
