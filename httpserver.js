@@ -138,37 +138,46 @@ let db = null;
 
     router.patch('/:id',
         async function (req, res) {
+            if (!req.body) {
+                return res.status(400).end();
+            }
             var id = ObjectID.isValid(req.params.id) ? ObjectID(req.params.id) : undefined;
             let device = null;
 
             if (id == undefined) {
                 return res.status(404)
-                    .json({ message: 'Device id format is not supported' });
+                    .end();
             } else if (!id) {
                 return res.status(404)
-                    .json({ message: 'Device id was not supplied' });
+                    .end();
             } else {
                 device = await db.collection('devices').findOne({ _id: id });
             }
 
             if (device) {
-                if (!req.body) {
-                    return res.status(400).json();
-                }
                 let req_device = {};
                 for (let item in req.body) {
                     req_device[item.toString()] = req.body[item];
                 }
                 req_device["state"].lastUpdate = Date.now();
-                mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
-                    if (!err) {
-                        console.log("Yay, it works");
-                    } else {
-                        console.log(err);
-                    }
-                });
-
-
+                if (req_device["state"].status) {
+                    mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
+                        if (!err) {
+                            console.log("Yay, it works");
+                        } else {
+                            console.log(err);
+                        }
+                    });
+                }
+                if (req_device["state"].temperature) {
+                    mqttClient.publish(`/devices/${device.chipId}/temperature`, req_device.state["temperature"].toString(), function (err) {
+                        if (!err) {
+                            console.log("Yay, it works");
+                        } else {
+                            console.log(err);
+                        }
+                    });
+                }
 
                 db.collection('devices').findOneAndUpdate(
                     { "_id": id },
@@ -176,7 +185,7 @@ let db = null;
                     { returnOriginal: false }, function (err, result) {
                         if (err) {
                             return res.status(500)
-                                .json({ message: 'An error occured.' });
+                                .end();
                         }
                         if (result) {
                             return res.status(204)
@@ -184,12 +193,12 @@ let db = null;
                                 .end();
                         } else {
                             return res.status(500)
-                                .json({ message: 'An error occured.' });
+                                .end();
                         }
                     });
             } else {
                 return res.status(404)
-                    .json({ message: 'Device was not found in the database.' });
+                    .end();
             }
         });
 
@@ -216,7 +225,7 @@ let db = null;
                     }
                     if (result) {
                         return res.status(204)
-                            .end();
+                            .json({});
                     } else {
                         return res.status(404)
                             .json({ message: 'Device was not found in the database.' });
@@ -232,7 +241,7 @@ let db = null;
     app.use('/devices', router);
     app.use((req, res) => {
         res.status(500)
-            .json();
+            .json({});
     })
     app.listen(
         config.options.port,
