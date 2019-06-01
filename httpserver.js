@@ -169,16 +169,19 @@ let db = null;
                 }
 
                 req_device["state"].lastUpdate = Date.now();
-                if (req_device["state"].status !== undefined) {
+                let init_temp = null;
+                if (req_device["state"].status !== undefined && req_device["state"].status !== device["state"].status) {
                     mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
                         if (!err) {
-                            console.log("Yay, it works");
+                            if (req_device["state"].status === 1) {
+                                init_temp = true;
+                            }
                         } else {
                             console.log(err);
                         }
                     });
                 }
-                if (req_device["state"].temperature) {
+                if ((req_device["state"].temperature && req_device["state"].temperature !== device["state"].temperature && req_device["state"].status === 1) || init_temp) {
                     mqttClient.publish(`/devices/${device.chipId}/temperature`, req_device.state["temperature"].toString(), function (err) {
                         if (!err) {
                             console.log("Yay, it works");
