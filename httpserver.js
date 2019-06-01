@@ -157,32 +157,32 @@ let db = null;
             if (device) {
                 let req_device = {};
                 for (let item in req.body) {
-                    if (typeof req.body[item] === 'object') {
-                        req_device["state"] = {
-                            ...device["state"],
-                            ...req.body["state"]
-                        };
-                    }
-                    else {
-                        req_device[item.toString()] = req.body[item];
-                    }
+                    req_device[item.toString()] = req.body[item];
                 }
 
                 req_device["state"].lastUpdate = Date.now();
-                let init_temp = null;
-                if (req_device["state"].status !== undefined && req_device["state"].status !== device["state"].status) {
+                if (req_device["state"].status !== undefined) {
                     mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
                         if (!err) {
-                            if (req_device["state"].status === 1) {
-                                init_temp = true;
+                            if (req_device["state"].status === 1 && device["type"] === "fan") {
+                                let temp = req_device.state["temperature"] !== undefined ? req_device.state["temperature"].toString() : device.state["temperature"].toString();
+                                mqttClient.publish(`/devices/${device.chipId}/temperature`, temp, function (err) {
+                                    if (!err) {
+                                        console.log("Yay, it works");
+                                    } else {
+                                        console.log(err);
+                                    }
+                                });
                             }
                         } else {
                             console.log(err);
                         }
                     });
                 }
-                if ((req_device["state"].temperature && req_device["state"].temperature !== device["state"].temperature && req_device["state"].status === 1) || init_temp) {
-                    mqttClient.publish(`/devices/${device.chipId}/temperature`, req_device.state["temperature"].toString(), function (err) {
+
+                if (req_device["state"].temperature && device["state"].status === 1) {
+                    let temp = req_device.state["temperature"] !== undefined ? req_device.state["temperature"].toString() : device.state["temperature"].toString();
+                    mqttClient.publish(`/devices/${device.chipId}/temperature`, temp, function (err) {
                         if (!err) {
                             console.log("Yay, it works");
                         } else {
@@ -190,6 +190,10 @@ let db = null;
                         }
                     });
                 }
+                req_device["state"] = {
+                    ...device["state"],
+                    ...req.body["state"]
+                };
 
                 db.collection('devices').findOneAndUpdate(
                     { "_id": id },
