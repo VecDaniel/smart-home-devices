@@ -156,7 +156,8 @@ let db = null;
                 for (let item in req.body) {
                     req_device[item.toString()] = req.body[item];
                 }
-
+                req_device["state"].lastUpdate=Date.now();
+                console.log(JSON.stringify(req_device));
                 mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
                     if (!err) {
                         console.log("Yay, it works");
