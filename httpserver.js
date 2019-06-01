@@ -169,7 +169,7 @@ let db = null;
                 }
 
                 req_device["state"].lastUpdate = Date.now();
-                if (req_device["state"].status) {
+                if (req_device["state"].status !== undefined) {
                     mqttClient.publish(`/devices/${device.chipId}/status`, req_device.state["status"].toString(), function (err) {
                         if (!err) {
                             console.log("Yay, it works");
