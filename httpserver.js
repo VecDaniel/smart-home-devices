@@ -72,7 +72,7 @@ let db = null;
     router.get('/',
         function (req, res) {
             db.collection('devices', function (err, collection) {
-                collection.find().project({ name: 1 }).toArray(function (err, items) {
+                collection.find().toArray(function (err, items) {
                     if (err) {
                         return res.status(500)
                             .json({ message: 'An error occured' });
